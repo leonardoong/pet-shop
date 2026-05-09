@@ -49,3 +49,26 @@ func Conflict(c *gin.Context, message string) {
 func InternalError(c *gin.Context, message string) {
 	c.JSON(500, ErrorResponse{Success: false, Message: message})
 }
+
+// Paginated wraps a slice + pagination metadata in the standard success envelope.
+type Paginated[T any] struct {
+	Items      []T   `json:"items"`
+	Total      int64 `json:"total"`
+	Page       int   `json:"page"`
+	Limit      int   `json:"limit"`
+	TotalPages int   `json:"total_pages"`
+}
+
+func NewPaginated[T any](items []T, total int64, page, limit int) Paginated[T] {
+	totalPages := int(total) / limit
+	if int(total)%limit != 0 {
+		totalPages++
+	}
+	return Paginated[T]{
+		Items:      items,
+		Total:      total,
+		Page:       page,
+		Limit:      limit,
+		TotalPages: totalPages,
+	}
+}

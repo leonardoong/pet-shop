@@ -3,18 +3,16 @@ package auth
 import (
 	"errors"
 
+	authdto "petshop/internal/dto/auth"
+	authsvc "petshop/internal/service/auth"
 	"petshop/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
-type Handler struct {
-	svc Service
-}
+type Handler struct{ svc authsvc.Service }
 
-func NewHandler(svc Service) *Handler {
-	return &Handler{svc: svc}
-}
+func NewHandler(svc authsvc.Service) *Handler { return &Handler{svc: svc} }
 
 // CustomerRegister godoc
 // @Summary      Register customer
@@ -22,14 +20,14 @@ func NewHandler(svc Service) *Handler {
 // @Tags         Customer Auth
 // @Accept       json
 // @Produce      json
-// @Param        request  body      CustomerRegisterRequest                          true  "Register payload"
-// @Success      201      {object}  response.Response{data=CustomerAuthResponse}     "Registration successful"
-// @Failure      400      {object}  response.ErrorResponse                           "Validation failed"
-// @Failure      409      {object}  response.ErrorResponse                           "Email already in use"
+// @Param        request  body      authdto.CustomerRegisterRequest                   true  "Register payload"
+// @Success      201      {object}  response.Response{data=authdto.CustomerAuthResponse}
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      409      {object}  response.ErrorResponse  "Email already in use"
 // @Failure      500      {object}  response.ErrorResponse
 // @Router       /customer/auth/register [post]
 func (h *Handler) CustomerRegister(c *gin.Context) {
-	var req CustomerRegisterRequest
+	var req authdto.CustomerRegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Validation failed", err.Error())
 		return
@@ -37,7 +35,7 @@ func (h *Handler) CustomerRegister(c *gin.Context) {
 
 	resp, err := h.svc.RegisterCustomer(req)
 	if err != nil {
-		if errors.Is(err, ErrEmailTaken) {
+		if errors.Is(err, authsvc.ErrEmailTaken) {
 			response.Conflict(c, "Email already in use")
 			return
 		}
@@ -54,15 +52,15 @@ func (h *Handler) CustomerRegister(c *gin.Context) {
 // @Tags         Customer Auth
 // @Accept       json
 // @Produce      json
-// @Param        request  body      CustomerLoginRequest                             true  "Login payload"
-// @Success      200      {object}  response.Response{data=CustomerAuthResponse}    "Login successful"
-// @Failure      400      {object}  response.ErrorResponse                          "Validation failed"
-// @Failure      401      {object}  response.ErrorResponse                          "Invalid credentials"
-// @Failure      403      {object}  response.ErrorResponse                          "Account inactive"
+// @Param        request  body      authdto.CustomerLoginRequest                      true  "Login payload"
+// @Success      200      {object}  response.Response{data=authdto.CustomerAuthResponse}
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
+// @Failure      403      {object}  response.ErrorResponse
 // @Failure      500      {object}  response.ErrorResponse
 // @Router       /customer/auth/login [post]
 func (h *Handler) CustomerLogin(c *gin.Context) {
-	var req CustomerLoginRequest
+	var req authdto.CustomerLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Validation failed", err.Error())
 		return
@@ -70,11 +68,11 @@ func (h *Handler) CustomerLogin(c *gin.Context) {
 
 	resp, err := h.svc.LoginCustomer(req)
 	if err != nil {
-		if errors.Is(err, ErrInvalidCreds) {
+		if errors.Is(err, authsvc.ErrInvalidCreds) {
 			response.Unauthorized(c, "Invalid email or password")
 			return
 		}
-		if errors.Is(err, ErrAccountInactive) {
+		if errors.Is(err, authsvc.ErrAccountInactive) {
 			response.Forbidden(c, "Account is inactive")
 			return
 		}
@@ -91,15 +89,15 @@ func (h *Handler) CustomerLogin(c *gin.Context) {
 // @Tags         Admin Auth
 // @Accept       json
 // @Produce      json
-// @Param        request  body      AdminLoginRequest                               true  "Login payload"
-// @Success      200      {object}  response.Response{data=AdminAuthResponse}       "Login successful"
-// @Failure      400      {object}  response.ErrorResponse                          "Validation failed"
-// @Failure      401      {object}  response.ErrorResponse                          "Invalid credentials"
-// @Failure      403      {object}  response.ErrorResponse                          "Account inactive"
+// @Param        request  body      authdto.AdminLoginRequest                         true  "Login payload"
+// @Success      200      {object}  response.Response{data=authdto.AdminAuthResponse}
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
+// @Failure      403      {object}  response.ErrorResponse
 // @Failure      500      {object}  response.ErrorResponse
 // @Router       /admin/auth/login [post]
 func (h *Handler) AdminLogin(c *gin.Context) {
-	var req AdminLoginRequest
+	var req authdto.AdminLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Validation failed", err.Error())
 		return
@@ -107,11 +105,11 @@ func (h *Handler) AdminLogin(c *gin.Context) {
 
 	resp, err := h.svc.LoginAdmin(req)
 	if err != nil {
-		if errors.Is(err, ErrInvalidCreds) {
+		if errors.Is(err, authsvc.ErrInvalidCreds) {
 			response.Unauthorized(c, "Invalid email or password")
 			return
 		}
-		if errors.Is(err, ErrAccountInactive) {
+		if errors.Is(err, authsvc.ErrAccountInactive) {
 			response.Forbidden(c, "Account is inactive")
 			return
 		}
@@ -128,13 +126,13 @@ func (h *Handler) AdminLogin(c *gin.Context) {
 // @Tags         Customer Auth
 // @Accept       json
 // @Produce      json
-// @Param        request  body      RefreshRequest                                  true  "Refresh payload"
-// @Success      200      {object}  response.Response{data=TokenPair}               "Token refreshed"
-// @Failure      400      {object}  response.ErrorResponse                          "Validation failed"
-// @Failure      401      {object}  response.ErrorResponse                          "Invalid or expired token"
+// @Param        request  body      authdto.RefreshRequest                true  "Refresh payload"
+// @Success      200      {object}  response.Response{data=authdto.TokenPair}
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
 // @Router       /customer/auth/refresh [post]
 func (h *Handler) CustomerRefresh(c *gin.Context) {
-	var req RefreshRequest
+	var req authdto.RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Validation failed", err.Error())
 		return
@@ -155,13 +153,13 @@ func (h *Handler) CustomerRefresh(c *gin.Context) {
 // @Tags         Admin Auth
 // @Accept       json
 // @Produce      json
-// @Param        request  body      RefreshRequest                                  true  "Refresh payload"
-// @Success      200      {object}  response.Response{data=TokenPair}               "Token refreshed"
-// @Failure      400      {object}  response.ErrorResponse                          "Validation failed"
-// @Failure      401      {object}  response.ErrorResponse                          "Invalid or expired token"
+// @Param        request  body      authdto.RefreshRequest                true  "Refresh payload"
+// @Success      200      {object}  response.Response{data=authdto.TokenPair}
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
 // @Router       /admin/auth/refresh [post]
 func (h *Handler) AdminRefresh(c *gin.Context) {
-	var req RefreshRequest
+	var req authdto.RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Validation failed", err.Error())
 		return
@@ -182,12 +180,12 @@ func (h *Handler) AdminRefresh(c *gin.Context) {
 // @Tags         Customer Auth
 // @Accept       json
 // @Produce      json
-// @Param        request  body      RefreshRequest           true  "Logout payload"
-// @Success      200      {object}  response.Response        "Logged out"
+// @Param        request  body      authdto.RefreshRequest  true  "Logout payload"
+// @Success      200      {object}  response.Response
 // @Failure      400      {object}  response.ErrorResponse
 // @Router       /customer/auth/logout [post]
 func (h *Handler) Logout(c *gin.Context) {
-	var req RefreshRequest
+	var req authdto.RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Validation failed", err.Error())
 		return

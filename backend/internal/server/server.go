@@ -5,8 +5,22 @@ import (
 	"log"
 	"strings"
 
-	"petshop/internal/auth"
+	authhandler "petshop/internal/handler/auth"
+	carthandler "petshop/internal/handler/cart"
+	orderhandler "petshop/internal/handler/order"
+	producthandler "petshop/internal/handler/product"
+	userhandler "petshop/internal/handler/user"
 	"petshop/internal/middleware"
+	authrepo "petshop/internal/repository/auth"
+	cartrepo "petshop/internal/repository/cart"
+	orderrepo "petshop/internal/repository/order"
+	productrepo "petshop/internal/repository/product"
+	userrepo "petshop/internal/repository/user"
+	authsvc "petshop/internal/service/auth"
+	cartsvc "petshop/internal/service/cart"
+	ordersvc "petshop/internal/service/order"
+	productsvc "petshop/internal/service/product"
+	usersvc "petshop/internal/service/user"
 	"petshop/pkg/config"
 	jwtpkg "petshop/pkg/jwt"
 
@@ -30,7 +44,6 @@ func New(cfg *config.Config, db *gorm.DB, jwtManager *jwtpkg.Manager) *Server {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
 
-	// CORS
 	origins := strings.Split(cfg.CORS.AllowedOrigins, ",")
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     origins,
@@ -46,44 +59,81 @@ func New(cfg *config.Config, db *gorm.DB, jwtManager *jwtpkg.Manager) *Server {
 }
 
 func (s *Server) registerRoutes(db *gorm.DB, jwtManager *jwtpkg.Manager) {
-	// --- Auth ---
-	authRepo := auth.NewRepository(db)
-	authSvc := auth.NewService(authRepo, jwtManager, s.cfg.JWT.AccessExpiryMinutes)
-	authHandler := auth.NewHandler(authSvc)
+	// --- Repositories ---
+	authRepo := authrepo.NewRepository(db)
+	categoryRepo, productRepo := productrepo.NewRepository(db)
+	cartRepo := cartrepo.NewRepository(db)
+	addrRepo := userrepo.NewRepository(db)
+	orderRepo := orderrepo.NewRepository(db)
+
+	// --- Services ---
+	authService := authsvc.NewService(authRepo, jwtManager, s.cfg.JWT.AccessExpiryMinutes)
+	categoryService := productsvc.NewCategoryService(categoryRepo)
+	productService := productsvc.NewProductService(productRepo)
+	cartService := cartsvc.NewService(cartRepo, productRepo)
+	addrService := usersvc.NewAddressService(addrRepo)
+	orderService := ordersvc.NewService(orderRepo, cartRepo, addrRepo, productRepo)
+
+	// --- Handlers ---
+	authH := authhandler.NewHandler(authService)
+	categoryH := producthandler.NewCategoryHandler(categoryService)
+	productH := producthandler.NewProductHandler(productService)
+	cartH := carthandler.NewHandler(cartService)
+	addrH := userhandler.NewAddressHandler(addrService)
+	orderH := orderhandler.NewHandler(orderService)
 
 	v1 := s.router.Group("/api/v1")
 
-	// Customer auth (public)
+	// --- Public: Auth ---
 	customerAuth := v1.Group("/customer/auth")
 	{
-		customerAuth.POST("/register", authHandler.CustomerRegister)
-		customerAuth.POST("/login", authHandler.CustomerLogin)
-		customerAuth.POST("/refresh", authHandler.CustomerRefresh)
-		customerAuth.POST("/logout", authHandler.Logout)
+		customerAuth.POST("/register", authH.CustomerRegister)
+		customerAuth.POST("/login", authH.CustomerLogin)
+		customerAuth.POST("/refresh", authH.CustomerRefresh)
+		customerAuth.POST("/logout", authH.Logout)
 	}
 
-	// Admin auth (public)
 	adminAuth := v1.Group("/admin/auth")
 	{
-		adminAuth.POST("/login", authHandler.AdminLogin)
-		adminAuth.POST("/refresh", authHandler.AdminRefresh)
-		adminAuth.POST("/logout", authHandler.Logout)
+		adminAuth.POST("/login", authH.AdminLogin)
+		adminAuth.POST("/refresh", authH.AdminRefresh)
+		adminAuth.POST("/logout", authH.Logout)
 	}
 
-	// Protected customer routes (example — expanded in later phases)
-	customerProtected := v1.Group("/customer")
-	customerProtected.Use(middleware.RequireCustomer(jwtManager))
+	// --- Public: Catalog ---
+	v1.GET("/categories", categoryH.List)
+	v1.GET("/categories/:slug", categoryH.GetBySlug)
+	v1.GET("/products", productH.List)
+	v1.GET("/products/:slug", productH.GetBySlug)
+
+	// --- Protected: Customer ---
+	customer := v1.Group("/customer")
+	customer.Use(middleware.RequireCustomer(jwtManager))
 	{
-		customerProtected.GET("/me", func(c *gin.Context) {
-			c.JSON(200, gin.H{"customer_id": c.GetString(middleware.ContextCustomerID)})
-		})
+		// Cart
+		customer.GET("/cart", cartH.Get)
+		customer.POST("/cart/items", cartH.AddItem)
+		customer.PUT("/cart/items/:productId", cartH.UpdateItem)
+		customer.DELETE("/cart/items/:productId", cartH.RemoveItem)
+
+		// Addresses
+		customer.GET("/addresses", addrH.List)
+		customer.POST("/addresses", addrH.Create)
+		customer.PUT("/addresses/:id", addrH.Update)
+		customer.DELETE("/addresses/:id", addrH.Delete)
+		customer.PATCH("/addresses/:id/default", addrH.SetDefault)
+
+		// Orders
+		customer.POST("/orders", orderH.Checkout)
+		customer.GET("/orders", orderH.List)
+		customer.GET("/orders/:id", orderH.GetByID)
 	}
 
-	// Protected admin routes (example — expanded in later phases)
-	adminProtected := v1.Group("/admin")
-	adminProtected.Use(middleware.RequireAdmin(jwtManager))
+	// --- Protected: Admin ---
+	admin := v1.Group("/admin")
+	admin.Use(middleware.RequireAdmin(jwtManager))
 	{
-		adminProtected.GET("/me", func(c *gin.Context) {
+		admin.GET("/me", func(c *gin.Context) {
 			c.JSON(200, gin.H{
 				"admin_id":    c.GetString(middleware.ContextAdminID),
 				"permissions": c.MustGet(middleware.ContextAdminPerms),
@@ -91,12 +141,10 @@ func (s *Server) registerRoutes(db *gorm.DB, jwtManager *jwtpkg.Manager) {
 		})
 	}
 
-	// Health
+	// --- Misc ---
 	s.router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
-
-	// Swagger UI — available at /swagger/index.html
 	s.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 }
 

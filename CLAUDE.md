@@ -61,68 +61,117 @@ Build a production-ready full-stack Pet Shop platform consisting of:
 
 # Architecture
 
-Use clean architecture principles.
+Clean architecture with layer-first, domain-second organization.
 
-Recommended structure:
+## Backend Structure
 
+```
 backend/
-├── cmd/
+├── cmd/api/            # Entry point (main.go)
 ├── internal/
-│   ├── auth/
-│   ├── user/
-│   ├── product/
-│   ├── cart/
-│   ├── order/
-│   ├── payment/
-│   ├── inventory/
-│   ├── dashboard/
-│   ├── middleware/
-│   ├── repository/
-│   ├── service/
-│   └── handler/
+│   ├── model/          # GORM structs — no business logic
+│   │   ├── user/       # Customer, Admin, Role, Permission, Address, RefreshToken
+│   │   ├── product/    # Category, Product
+│   │   ├── cart/       # Cart, CartItem
+│   │   └── order/      # Order, OrderItem
+│   ├── dto/            # Request/response types — no DB tags
+│   │   ├── auth/
+│   │   ├── user/       # Address request types
+│   │   ├── product/    # Filter
+│   │   ├── cart/
+│   │   └── order/
+│   ├── repository/     # DB operations only — no business rules
+│   │   ├── auth/
+│   │   ├── user/       # Address persistence
+│   │   ├── product/    # Category + Product (shared domain)
+│   │   ├── cart/
+│   │   └── order/
+│   ├── service/        # Domain logic — testable, no infra coupling
+│   │   ├── auth/
+│   │   ├── user/       # Address service
+│   │   ├── product/    # CategoryService + ProductService
+│   │   ├── cart/
+│   │   └── order/
+│   ├── handler/        # HTTP layer — parse, call service, respond
+│   │   ├── auth/
+│   │   ├── user/       # Address handler
+│   │   ├── product/    # CategoryHandler + ProductHandler
+│   │   ├── cart/
+│   │   └── order/
+│   ├── middleware/     # Auth (RequireCustomer, RequireAdmin), RBAC
+│   └── server/         # Route registration, CORS, Swagger
 ├── pkg/
-├── migrations/
-├── docs/
-└── tests/
+│   ├── config/         # Env loading
+│   ├── jwt/            # JWT Manager (customer + admin issuers)
+│   ├── response/       # Standard JSON envelope helpers
+│   └── validator/      # Custom Gin validators (indonesian_phone)
+├── migrations/         # golang-migrate SQL files (up + down)
+└── docs/               # Auto-generated Swagger (swag init)
+```
 
+## Import Alias Convention
+
+When the same domain name appears across multiple layers, use short aliases:
+
+```go
+// Within a service file, importing own-domain layers:
+model  "petshop/internal/model/product"
+repo   "petshop/internal/repository/product"
+dto    "petshop/internal/dto/product"
+
+// Cross-domain imports use the domain as prefix:
+cartrepo    "petshop/internal/repository/cart"
+userrepo    "petshop/internal/repository/user"
+productrepo "petshop/internal/repository/product"
+```
+
+## Domain Grouping
+
+| Domain folder | Covers |
+|---|---|
+| `auth` | Customer + admin authentication, token lifecycle |
+| `user` | Customer profile, admin accounts, shipping addresses |
+| `product` | Categories and products (shared layer folder) |
+| `cart` | Cart and cart items |
+| `order` | Orders and order items, checkout flow |
+| `payment` | *(future)* |
+| `inventory` | *(future)* |
+| `dashboard` | *(future)* |
+
+## Frontend Structure
+
+```
 frontend/
 ├── src/
-│   ├── api/
-│   ├── components/
-│   ├── pages/
-│   ├── hooks/
-│   ├── store/
-│   ├── layouts/
-│   ├── types/
-│   ├── lib/
-│   └── routes/
+│   ├── api/            # Axios instances + per-domain API functions
+│   ├── components/     # Shared UI components
+│   ├── pages/          # Route-level page components
+│   ├── hooks/          # Custom React hooks
+│   ├── store/          # Zustand stores
+│   ├── layouts/        # CustomerLayout, AdminLayout
+│   ├── types/          # TypeScript interfaces matching backend models
+│   ├── lib/            # Utilities, helpers
+│   └── routes/         # React Router configuration
+```
 
 ---
 
-## Backend Restrictions
+## Backend Layer Rules
 
-### Controllers/Handlers
-Handlers should:
-- only parse requests
-- call services
-- return responses
-
-Business logic MUST stay in services.
-
----
+### Handlers
+- Only parse requests, call services, return responses
+- No business logic — ever
 
 ### Services
-Services should:
-- contain domain logic
-- be testable
-- avoid infrastructure coupling
+- Own all domain logic
+- Testable with no infrastructure coupling
+- Define their own error sentinel vars (e.g. `ErrProductNotFound`)
 
----
-
-### Repository Layer
-Repositories should:
-- only handle database operations
-- never contain business rules
+### Repositories
+- Only handle DB operations
+- No business rules
+- Interfaces defined in the repository package; services import them directly
+- Sentinel errors that arise from DB operations live here (e.g. `ErrInsufficientStock`)
 
 ---
 

@@ -7,6 +7,7 @@ import (
 	"petshop/pkg/response"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 const (
@@ -58,6 +59,12 @@ func RequireAdmin(jwtManager *jwtpkg.Manager) gin.HandlerFunc {
 		c.Set(ContextAdminPerms, claims.Permissions)
 		c.Next()
 	}
+}
+
+// MustGetCustomerID extracts the customer UUID from context (set by RequireCustomer).
+func MustGetCustomerID(c *gin.Context) uuid.UUID {
+	id, _ := uuid.Parse(c.GetString(ContextCustomerID))
+	return id
 }
 
 func extractBearer(c *gin.Context) string {
