@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go mod *)",
+      "Bash(go build *)",
+      "Bash(go run *)",
+      "Bash(curl -s http://localhost:8080/health)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(echo \"Backend PID: $!\")",
+      "Bash(echo \"Frontend PID: $!\")",
+      "Read(//tmp/**)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill /PID 23912 /F)",
+      "PowerShell(Stop-Process -Id 23912 -Force)",
+      "Bash(curl -s -X POST http://localhost:8080/api/v1/customer/auth/register -H 'Content-Type: application/json' -d '{\"full_name\":\"Test User\",\"email\":\"test@petshop.com\",\"password\":\"password123\"}')",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:8080/api/v1/customer/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"test@petshop.com\",\"password\":\"password123\"}')",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(curl -s -X POST http://localhost:8080/api/v1/customer/auth/register -H 'Content-Type: application/json' -d '{\"full_name\":\"Budi\",\"email\":\"budi@test.com\",\"password\":\"password123\"}')",
+      "Bash(curl -s -X POST http://localhost:8080/api/v1/customer/auth/register -H 'Content-Type: application/json' -d '{\"full_name\":\"Budi\",\"email\":\"budi2@test.com\",\"password\":\"password123\",\"phone\":\"12345\"}')",
+      "Bash(curl -s -X POST http://localhost:8080/api/v1/customer/auth/register -H 'Content-Type: application/json' -d '{\"full_name\":\"Budi Santoso\",\"email\":\"budi3@test.com\",\"password\":\"password123\",\"phone\":\"081234567890\"}')",
+      "Bash(go get *)",
+      "Bash(where swag *)",
+      "Bash(go install *)",
+      "Bash(~/go/bin/swag init *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/swagger/index.html)",
+      "Bash(git add *)"
+    ]
+  }
+}

@@ -1,0 +1,364 @@
+basePath: /api/v1
+definitions:
+  auth.AdminAuthResponse:
+    properties:
+      admin:
+        $ref: '#/definitions/auth.AdminProfile'
+      permissions:
+        items:
+          type: string
+        type: array
+      tokens:
+        $ref: '#/definitions/auth.TokenPair'
+    type: object
+  auth.AdminLoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.AdminProfile:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+    type: object
+  auth.CustomerAuthResponse:
+    properties:
+      customer:
+        $ref: '#/definitions/auth.CustomerProfile'
+      tokens:
+        $ref: '#/definitions/auth.TokenPair'
+    type: object
+  auth.CustomerLoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.CustomerProfile:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+      phone:
+        type: string
+    type: object
+  auth.CustomerRegisterRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        minLength: 8
+        type: string
+      phone:
+        type: string
+    required:
+    - email
+    - full_name
+    - password
+    - phone
+    type: object
+  auth.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  auth.TokenPair:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        description: seconds
+        type: integer
+      token_type:
+        type: string
+    type: object
+  response.ErrorResponse:
+    description: Standard API error response
+    properties:
+      errors:
+        example:
+        - field is required
+        items:
+          type: string
+        type: array
+      message:
+        example: Validation failed
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  response.Response:
+    description: Standard API success response
+    properties:
+      data: {}
+      message:
+        example: Success
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: dev@petshop.com
+    name: PetShop Dev
+  description: REST API for PetShop e-commerce platform
+  license:
+    name: MIT
+  termsOfService: http://swagger.io/terms/
+  title: PetShop API
+  version: "1.0"
+paths:
+  /admin/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate an admin and return tokens with RBAC permissions
+      parameters:
+      - description: Login payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.AdminLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.AdminAuthResponse'
+              type: object
+        "400":
+          description: Validation failed
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Account inactive
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Login admin
+      tags:
+      - Admin Auth
+  /admin/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Exchange a valid admin refresh token for a new access token (rotation)
+      parameters:
+      - description: Refresh payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token refreshed
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.TokenPair'
+              type: object
+        "400":
+          description: Validation failed
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Invalid or expired token
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Refresh admin token
+      tags:
+      - Admin Auth
+  /customer/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a customer and return access + refresh tokens
+      parameters:
+      - description: Login payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.CustomerLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.CustomerAuthResponse'
+              type: object
+        "400":
+          description: Validation failed
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Account inactive
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Login customer
+      tags:
+      - Customer Auth
+  /customer/auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Revoke the provided refresh token. Works for both customer and
+        admin.
+      parameters:
+      - description: Logout payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logged out
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Logout
+      tags:
+      - Customer Auth
+  /customer/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Exchange a valid refresh token for a new access token (rotation)
+      parameters:
+      - description: Refresh payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token refreshed
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.TokenPair'
+              type: object
+        "400":
+          description: Validation failed
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Invalid or expired token
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Refresh customer token
+      tags:
+      - Customer Auth
+  /customer/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new customer account
+      parameters:
+      - description: Register payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.CustomerRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Registration successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.CustomerAuthResponse'
+              type: object
+        "400":
+          description: Validation failed
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Email already in use
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Register customer
+      tags:
+      - Customer Auth
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and the access token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
