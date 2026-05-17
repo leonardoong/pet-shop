@@ -1,31 +1,50 @@
 import { Outlet, Link, useNavigate, NavLink } from 'react-router-dom'
 import { ShoppingCart, User, LogOut, Menu, X, Search } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuthStore } from '@/store/authStore'
+import { useCartStore } from '@/store/cartStore'
 import { cn } from '@/lib/utils'
 
 const navLinks = [
-  { to: '/shop',                 label: 'Semua Produk' },
-  { to: '/shop?category=anjing', label: 'Anjing' },
-  { to: '/shop?category=kucing', label: 'Kucing' },
+  { to: '/shop',                  label: 'Semua Produk' },
+  { to: '/shop?category=anjing',  label: 'Anjing' },
+  { to: '/shop?category=kucing',  label: 'Kucing' },
 ]
 
 export default function CustomerLayout() {
   const { isAuthenticated, customer, logout } = useAuthStore()
+  const { fetch: fetchCart, cart } = useCartStore()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  const itemCount = cart?.items?.reduce((sum, i) => sum + i.quantity, 0) ?? 0
+
+  // Fetch cart when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated) fetchCart()
+  }, [isAuthenticated, fetchCart])
 
   const handleLogout = () => {
     logout()
+    useCartStore.getState().clear()
     navigate('/')
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`)
+      setMenuOpen(false)
+    }
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-warm-50">
-      {/* Header merges into hero — warm green background */}
       <header className="sticky top-0 z-50 bg-primary-500 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Top row: logo, search, actions */}
+          {/* Top row */}
           <div className="flex items-center gap-4 h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 font-bold text-xl text-white shrink-0">
@@ -33,33 +52,48 @@ export default function CustomerLayout() {
             </Link>
 
             {/* Search bar */}
-            <div className="flex-1 hidden sm:flex items-center max-w-lg relative">
+            <form onSubmit={handleSearch} className="flex-1 hidden sm:flex items-center max-w-lg relative">
               <Search className="absolute left-3 w-4 h-4 text-primary-400 pointer-events-none" />
               <input
-                type="text"
+                ref={searchRef}
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari produk untuk hewan peliharaan..."
                 className="w-full bg-white/20 placeholder-white/70 text-white border border-white/30 rounded-xl pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/30 transition-colors"
               />
-            </div>
+            </form>
 
             {/* Actions */}
             <div className="flex items-center gap-2 ml-auto">
+              {/* Cart with badge */}
               <Link
                 to="/keranjang"
                 className="p-2 rounded-xl hover:bg-white/20 transition-colors relative"
                 aria-label="Keranjang belanja"
               >
                 <ShoppingCart className="w-5 h-5 text-white" />
+                {itemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1 leading-none">
+                    {itemCount > 99 ? '99+' : itemCount}
+                  </span>
+                )}
               </Link>
 
               {isAuthenticated ? (
                 <>
                   <Link
-                    to="/akun"
+                    to="/akun/alamat"
                     className="hidden md:flex items-center gap-1.5 text-sm text-white/90 hover:text-white px-3 py-2 rounded-xl hover:bg-white/20 transition-colors"
                   >
                     <User className="w-4 h-4" />
                     {customer?.full_name.split(' ')[0]}
+                  </Link>
+                  <Link
+                    to="/pesanan"
+                    className="hidden md:block text-sm text-white/80 hover:text-white px-3 py-2 rounded-xl hover:bg-white/20 transition-colors"
+                  >
+                    Pesanan
                   </Link>
                   <button
                     onClick={handleLogout}
@@ -120,14 +154,16 @@ export default function CustomerLayout() {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="md:hidden border-t border-white/20 bg-primary-600 px-4 py-3 space-y-1 text-sm">
-            <div className="flex items-center relative mb-3">
+            <form onSubmit={handleSearch} className="flex items-center relative mb-3">
               <Search className="absolute left-3 w-4 h-4 text-white/50" />
               <input
-                type="text"
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari produk..."
                 className="w-full bg-white/20 placeholder-white/60 text-white border border-white/30 rounded-xl pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/40"
               />
-            </div>
+            </form>
             {navLinks.map(({ to, label }) => (
               <Link key={to} to={to} onClick={() => setMenuOpen(false)}
                 className="block px-3 py-2 rounded-lg text-white/90 hover:bg-white/20"
@@ -138,7 +174,8 @@ export default function CustomerLayout() {
             <div className="border-t border-white/20 pt-2 mt-2">
               {isAuthenticated ? (
                 <>
-                  <Link to="/akun" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg text-white/90 hover:bg-white/20">Akun Saya</Link>
+                  <Link to="/pesanan" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg text-white/90 hover:bg-white/20">Pesanan Saya</Link>
+                  <Link to="/akun/alamat" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg text-white/90 hover:bg-white/20">Buku Alamat</Link>
                   <button onClick={handleLogout} className="block w-full text-left px-3 py-2 rounded-lg text-red-200 hover:bg-white/10">Keluar</button>
                 </>
               ) : (

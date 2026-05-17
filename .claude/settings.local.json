@@ -25,7 +25,25 @@
       "Bash(go install *)",
       "Bash(~/go/bin/swag init *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/swagger/index.html)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 8080 -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; Write-Host \"Killed port 8080\")",
+      "Bash(curl -s http://localhost:8080/api/v1/categories)",
+      "Bash(curl -s http://localhost:8080/api/v1/products)",
+      "Bash(curl -s -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjdXN0b21lciIsInN1YiI6IjI1OTY3ZjUzLWY1OGUtNDdkNC05YTRmLWY0MjA1ZDlkNmEyNSIsImV4cCI6MTc3ODM0OTMyOCwiaWF0IjoxNzc4MzQ4NDI4LCJqdGkiOiIyZTA3YjEyNC0wMGM2LTRhNTctYTRjYy04YjhkMWU3YWMwMTUiLCJjaWQiOiIyNTk2N2Y1My1mNThlLTQ3ZDQtOWE0Zi1mNDIwNWQ5ZDZhMjUifQ.z8RIDdLsOnUW7GrWolAS3sBH8qSHK0_Z7yfif64zwe4' http://localhost:8080/api/v1/customer/cart)",
+      "Bash(curl -s -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjdXN0b21lciIsInN1YiI6IjI1OTY3ZjUzLWY1OGUtNDdkNC05YTRmLWY0MjA1ZDlkNmEyNSIsImV4cCI6MTc3ODM0OTMyOCwiaWF0IjoxNzc4MzQ4NDI4LCJqdGkiOiIyZTA3YjEyNC0wMGM2LTRhNTctYTRjYy04YjhkMWU3YWMwMTUiLCJjaWQiOiIyNTk2N2Y1My1mNThlLTQ3ZDQtOWE0Zi1mNDIwNWQ5ZDZhMjUifQ.z8RIDdLsOnUW7GrWolAS3sBH8qSHK0_Z7yfif64zwe4' http://localhost:8080/api/v1/customer/addresses)",
+      "Bash(curl -s -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjdXN0b21lciIsInN1YiI6IjI1OTY3ZjUzLWY1OGUtNDdkNC05YTRmLWY0MjA1ZDlkNmEyNSIsImV4cCI6MTc3ODM0OTMyOCwiaWF0IjoxNzc4MzQ4NDI4LCJqdGkiOiIyZTA3YjEyNC0wMGM2LTRhNTctYTRjYy04YjhkMWU3YWMwMTUiLCJjaWQiOiIyNTk2N2Y1My1mNThlLTQ3ZDQtOWE0Zi1mNDIwNWQ5ZDZhMjUifQ.z8RIDdLsOnUW7GrWolAS3sBH8qSHK0_Z7yfif64zwe4' http://localhost:8080/api/v1/customer/orders)",
+      "Bash(curl -s -X POST http://localhost:8080/api/v1/customer/orders -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjdXN0b21lciIsInN1YiI6IjI1OTY3ZjUzLWY1OGUtNDdkNC05YTRmLWY0MjA1ZDlkNmEyNSIsImV4cCI6MTc3ODM0OTMyOCwiaWF0IjoxNzc4MzQ4NDI4LCJqdGkiOiIyZTA3YjEyNC0wMGM2LTRhNTctYTRjYy04YjhkMWU3YWMwMTUiLCJjaWQiOiIyNTk2N2Y1My1mNThlLTQ3ZDQtOWE0Zi1mNDIwNWQ5ZDZhMjUifQ.z8RIDdLsOnUW7GrWolAS3sBH8qSHK0_Z7yfif64zwe4' -H 'Content-Type: application/json' -d '{\"address_id\":\"8cfc04f4-ca8c-4753-b121-f752be4ac5b4\"}')",
+      "Bash(curl -s -X POST http://localhost:8080/api/v1/customer/cart/items -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjdXN0b21lciIsInN1YiI6IjI1OTY3ZjUzLWY1OGUtNDdkNC05YTRmLWY0MjA1ZDlkNmEyNSIsImV4cCI6MTc3ODM0OTMyOCwiaWF0IjoxNzc4MzQ4NDI4LCJqdGkiOiIyZTA3YjEyNC0wMGM2LTRhNTctYTRjYy04YjhkMWU3YWMwMTUiLCJjaWQiOiIyNTk2N2Y1My1mNThlLTQ3ZDQtOWE0Zi1mNDIwNWQ5ZDZhMjUifQ.z8RIDdLsOnUW7GrWolAS3sBH8qSHK0_Z7yfif64zwe4' -H 'Content-Type: application/json' -d '{\"product_id\":\"00000000-0000-0000-0000-000000000001\",\"quantity\":1}')",
+      "Bash(docker exec *)",
+      "Bash(curl -s \"http://localhost:8080/api/v1/products\")",
+      "Bash(curl -s \"http://localhost:8080/api/v1/products/makanan-anjing-royal-canin\")",
+      "Bash(curl -s -X POST http://localhost:8080/api/v1/customer/cart/items -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjdXN0b21lciIsInN1YiI6IjI1OTY3ZjUzLWY1OGUtNDdkNC05YTRmLWY0MjA1ZDlkNmEyNSIsImV4cCI6MTc3ODM0OTMyOCwiaWF0IjoxNzc4MzQ4NDI4LCJqdGkiOiIyZTA3YjEyNC0wMGM2LTRhNTctYTRjYy04YjhkMWU3YWMwMTUiLCJjaWQiOiIyNTk2N2Y1My1mNThlLTQ3ZDQtOWE0Zi1mNDIwNWQ5ZDZhMjUifQ.z8RIDdLsOnUW7GrWolAS3sBH8qSHK0_Z7yfif64zwe4' -H 'Content-Type: application/json' -d '{\"product_id\":\"22222222-2222-2222-2222-222222222222\",\"quantity\":2}')",
+      "Bash(curl -s \"http://localhost:8080/api/v1/products?category=anjing\")",
+      "Bash(curl -s \"http://localhost:8080/api/v1/products?search=royal\")",
+      "Bash(curl -s \"http://localhost:8080/api/v1/products?search=kucing\")",
+      "Bash(git restore *)"
     ]
   }
 }

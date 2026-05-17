@@ -3,6 +3,13 @@ import CustomerLayout from '@/layouts/CustomerLayout'
 import Home from '@/pages/Home'
 import Login from '@/pages/Login'
 import Register from '@/pages/Register'
+import Shop from '@/pages/Shop'
+import ProductDetail from '@/pages/ProductDetail'
+import Cart from '@/pages/Cart'
+import Checkout from '@/pages/Checkout'
+import Orders from '@/pages/Orders'
+import OrderDetail from '@/pages/OrderDetail'
+import AddressBook from '@/pages/AddressBook'
 import { useAuthStore } from '@/store/authStore'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -11,27 +18,35 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-const placeholder = (label: string) => (
-  <div className="max-w-7xl mx-auto px-4 py-16 text-center text-gray-400">{label}</div>
-)
-
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <CustomerLayout />,
     children: [
-      { index: true,        element: <Home /> },
-      { path: 'masuk',      element: <Login /> },
-      { path: 'daftar',     element: <Register /> },
-      { path: 'shop',       element: placeholder('Katalog produk — hadir di Phase 2') },
-      { path: 'produk/:id', element: placeholder('Detail produk — hadir di Phase 2') },
+      { index: true,              element: <Home /> },
+      { path: 'masuk',            element: <Login /> },
+      { path: 'daftar',           element: <Register /> },
+      { path: 'shop',             element: <Shop /> },
+      { path: 'produk/:slug',     element: <ProductDetail /> },
       {
         path: 'keranjang',
-        element: <RequireAuth>{placeholder('Keranjang belanja — hadir di Phase 2')}</RequireAuth>,
+        element: <RequireAuth><Cart /></RequireAuth>,
       },
       {
-        path: 'akun',
-        element: <RequireAuth>{placeholder('Akun saya — hadir di Phase 4')}</RequireAuth>,
+        path: 'checkout',
+        element: <RequireAuth><Checkout /></RequireAuth>,
+      },
+      {
+        path: 'pesanan',
+        element: <RequireAuth><Orders /></RequireAuth>,
+      },
+      {
+        path: 'pesanan/:id',
+        element: <RequireAuth><OrderDetail /></RequireAuth>,
+      },
+      {
+        path: 'akun/alamat',
+        element: <RequireAuth><AddressBook /></RequireAuth>,
       },
     ],
   },
