@@ -97,7 +97,7 @@ export default function Home() {
             </Link>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {categories
+            {Array.isArray(categories)
               ? categories.map((cat) => (
                   <Link
                     key={cat.id}

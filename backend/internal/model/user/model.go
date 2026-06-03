@@ -13,6 +13,7 @@ type Customer struct {
 	PasswordHash string    `gorm:"not null"              json:"-"`
 	FullName     string    `gorm:"not null"              json:"full_name"`
 	Phone        string    `json:"phone"`
+	AvatarURL    *string   `json:"avatar_url"`
 	IsActive     bool      `gorm:"default:true"          json:"is_active"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
@@ -136,5 +137,26 @@ func (r *RefreshToken) BeforeCreate(tx *gorm.DB) error {
 }
 
 func (r *RefreshToken) IsExpired() bool {
+	return time.Now().After(r.ExpiresAt)
+}
+
+type ResetToken struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey"`
+	Email     string    `gorm:"not null;index"`
+	TokenHash string    `gorm:"uniqueIndex;not null"`
+	UserType  UserType  `gorm:"type:varchar(10);not null"`
+	ExpiresAt time.Time `gorm:"not null"`
+	Used      bool      `gorm:"default:false"`
+	CreatedAt time.Time
+}
+
+func (r *ResetToken) BeforeCreate(tx *gorm.DB) error {
+	if r.ID == uuid.Nil {
+		r.ID = uuid.New()
+	}
+	return nil
+}
+
+func (r *ResetToken) IsExpired() bool {
 	return time.Now().After(r.ExpiresAt)
 }

@@ -118,7 +118,7 @@ func (s *service) LoginAdmin(req authdto.AdminLoginRequest) (*authdto.AdminAuthR
 
 	return &authdto.AdminAuthResponse{
 		Admin:       authdto.AdminProfile{ID: a.ID.String(), FullName: a.FullName, Email: a.Email},
-		Tokens:      authdto.TokenPair{AccessToken: accessToken, TokenType: "Bearer", ExpiresIn: s.accessExp * 60},
+		Tokens:      authdto.TokenPair{AccessToken: accessToken, RefreshToken: refreshToken, TokenType: "Bearer", ExpiresIn: s.accessExp * 60},
 		Permissions: perms,
 	}, nil
 }
@@ -139,7 +139,20 @@ func (s *service) RefreshCustomerToken(refreshToken string) (*authdto.TokenPair,
 		return nil, ErrInvalidToken
 	}
 
-	return s.issueCustomerTokenPair(c.ID.String())
+	accessToken, err := s.jwtManager.GenerateCustomerAccess(c.ID.String())
+	if err != nil {
+		return nil, err
+	}
+
+	newRefresh, err := s.jwtManager.GenerateRefresh(c.ID.String(), jwtpkg.IssuerCustomer)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.storeRefreshToken(c.ID.String(), usermodel.UserTypeCustomer, newRefresh); err != nil {
+		return nil, err
+	}
+
+	return &authdto.TokenPair{AccessToken: accessToken, RefreshToken: newRefresh, TokenType: "Bearer", ExpiresIn: s.accessExp * 60}, nil
 }
 
 func (s *service) RefreshAdminToken(refreshToken string) (*authdto.TokenPair, error) {
@@ -172,7 +185,7 @@ func (s *service) RefreshAdminToken(refreshToken string) (*authdto.TokenPair, er
 		return nil, err
 	}
 
-	return &authdto.TokenPair{AccessToken: accessToken, TokenType: "Bearer", ExpiresIn: s.accessExp * 60}, nil
+	return &authdto.TokenPair{AccessToken: accessToken, RefreshToken: newRefresh, TokenType: "Bearer", ExpiresIn: s.accessExp * 60}, nil
 }
 
 func (s *service) Logout(refreshToken string) error {
@@ -207,7 +220,7 @@ func (s *service) issueCustomerTokenPair(customerID string) (*authdto.TokenPair,
 	if err := s.storeRefreshToken(customerID, usermodel.UserTypeCustomer, refreshToken); err != nil {
 		return nil, err
 	}
-	return &authdto.TokenPair{AccessToken: accessToken, TokenType: "Bearer", ExpiresIn: s.accessExp * 60}, nil
+	return &authdto.TokenPair{AccessToken: accessToken, RefreshToken: refreshToken, TokenType: "Bearer", ExpiresIn: s.accessExp * 60}, nil
 }
 
 func (s *service) storeRefreshToken(userID string, userType usermodel.UserType, rawToken string) error {

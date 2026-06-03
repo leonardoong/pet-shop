@@ -27,7 +27,7 @@ export default function AdminLogin() {
     try {
       const res = await authApi.login(data)
       const { admin, tokens, permissions } = res.data.data
-      setAuth(admin, tokens.access_token, tokens.access_token, permissions)
+      setAuth(admin, tokens.access_token, tokens.refresh_token, permissions)
       navigate('/dashboard', { replace: true })
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })

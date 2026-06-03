@@ -29,9 +29,10 @@ export const useAuthStore = create<AuthState>()(
         const { refreshToken } = get()
         if (!refreshToken) throw new Error('No refresh token')
         const res = await authApi.refresh(refreshToken)
+        const { access_token, refresh_token } = res.data.data
         set({
-          accessToken: res.data.data.access_token,
-          // refresh token rotation: backend returns a new one in the next phase
+          accessToken: access_token,
+          refreshToken: refresh_token || refreshToken,
         })
       },
 

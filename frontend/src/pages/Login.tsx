@@ -30,7 +30,7 @@ export default function Login() {
     try {
       const res = await authApi.login(data)
       const { customer, tokens } = res.data.data
-      setAuth(customer, tokens.access_token, tokens.access_token)
+      setAuth(customer, tokens.access_token, tokens.refresh_token)
       navigate(from, { replace: true })
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })

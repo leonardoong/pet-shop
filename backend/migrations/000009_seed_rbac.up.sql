@@ -13,6 +13,7 @@ INSERT INTO permissions (id, name, description) VALUES
     (gen_random_uuid(), 'inventory:read',      'View inventory'),
     (gen_random_uuid(), 'inventory:update',    'Adjust inventory'),
     (gen_random_uuid(), 'customers:read',      'View customer accounts'),
+    (gen_random_uuid(), 'customers:update',    'Update customer accounts'),
     (gen_random_uuid(), 'admins:read',         'View admin accounts'),
     (gen_random_uuid(), 'admins:create',       'Create admin accounts'),
     (gen_random_uuid(), 'admins:update',       'Update admin accounts'),
@@ -38,7 +39,8 @@ WHERE name IN (
     'categories:read', 'categories:create', 'categories:update',
     'orders:read', 'orders:update',
     'inventory:read', 'inventory:update',
-    'customers:read', 'dashboard:read'
+    'customers:read', 'customers:update',
+    'dashboard:read'
 );
 
 -- inventory_staff permissions

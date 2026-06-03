@@ -17,6 +17,8 @@ export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [filterOpen, setFilterOpen] = useState(false)
   const [localSearch, setLocalSearch] = useState(searchParams.get('search') ?? '')
+  const [localMinPrice, setLocalMinPrice] = useState(searchParams.get('min_price') ?? '')
+  const [localMaxPrice, setLocalMaxPrice] = useState(searchParams.get('max_price') ?? '')
 
   const category  = searchParams.get('category') ?? ''
   const search    = searchParams.get('search') ?? ''
@@ -46,11 +48,28 @@ export default function Shop() {
     return () => clearTimeout(t)
   }, [localSearch, updateParam])
 
-  const { data: categoriesData } = useQuery({
+  // Debounce price inputs → URL
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        if (localMinPrice) next.set('min_price', localMinPrice)
+        else next.delete('min_price')
+        if (localMaxPrice) next.set('max_price', localMaxPrice)
+        else next.delete('max_price')
+        next.delete('page')
+        return next
+      })
+    }, 600)
+    return () => clearTimeout(t)
+  }, [localMinPrice, localMaxPrice, setSearchParams])
+
+  const { data: rawCategories } = useQuery({
     queryKey: ['categories'],
     queryFn: () => categoriesApi.list().then((r) => r.data.data),
     staleTime: 5 * 60 * 1000,
   })
+  const categoriesData = Array.isArray(rawCategories) ? rawCategories : []
 
   const filter: ProductFilter = { category: category || undefined, search: search || undefined, sort, min_price: minPrice, max_price: maxPrice, page, limit: 12 }
 
@@ -111,15 +130,15 @@ export default function Shop() {
                 <input
                   type="number"
                   placeholder="Min"
-                  defaultValue={minPrice}
-                  onBlur={(e) => updateParam('min_price', e.target.value || undefined)}
+                  value={localMinPrice}
+                  onChange={(e) => setLocalMinPrice(e.target.value)}
                   className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-400"
                 />
                 <input
                   type="number"
                   placeholder="Max"
-                  defaultValue={maxPrice}
-                  onBlur={(e) => updateParam('max_price', e.target.value || undefined)}
+                  value={localMaxPrice}
+                  onChange={(e) => setLocalMaxPrice(e.target.value)}
                   className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-400"
                 />
               </div>
@@ -208,6 +227,18 @@ export default function Shop() {
                 <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
                   "{search}"
                   <button onClick={() => { setLocalSearch(''); updateParam('search', undefined) }}><X className="w-3 h-3" /></button>
+                </span>
+              )}
+              {minPrice && (
+                <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
+                  Min Rp {Number(minPrice).toLocaleString()}
+                  <button onClick={() => { setLocalMinPrice(''); updateParam('min_price', undefined) }}><X className="w-3 h-3" /></button>
+                </span>
+              )}
+              {maxPrice && (
+                <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
+                  Max Rp {Number(maxPrice).toLocaleString()}
+                  <button onClick={() => { setLocalMaxPrice(''); updateParam('max_price', undefined) }}><X className="w-3 h-3" /></button>
                 </span>
               )}
             </div>

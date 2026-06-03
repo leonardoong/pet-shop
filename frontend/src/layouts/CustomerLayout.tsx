@@ -3,13 +3,9 @@ import { ShoppingCart, User, LogOut, Menu, X, Search } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useAuthStore } from '@/store/authStore'
 import { useCartStore } from '@/store/cartStore'
+import { useQuery } from '@tanstack/react-query'
+import { categoriesApi } from '@/api/products'
 import { cn } from '@/lib/utils'
-
-const navLinks = [
-  { to: '/shop',                  label: 'Semua Produk' },
-  { to: '/shop?category=anjing',  label: 'Anjing' },
-  { to: '/shop?category=kucing',  label: 'Kucing' },
-]
 
 export default function CustomerLayout() {
   const { isAuthenticated, customer, logout } = useAuthStore()
@@ -18,6 +14,22 @@ export default function CustomerLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
+
+  const { data: catData } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => categoriesApi.list(),
+    staleTime: 5 * 60_000,
+  })
+
+  const raw = catData?.data?.data
+  const categories = Array.isArray(raw) ? raw : []
+  const navLinks = [
+    { to: '/shop', label: 'Semua Produk' },
+    ...categories.slice(0, 6).map((c: { slug: string; name: string }) => ({
+      to: `/shop?category=${c.slug}`,
+      label: c.name,
+    })),
+  ]
 
   const itemCount = cart?.items?.reduce((sum, i) => sum + i.quantity, 0) ?? 0
 
@@ -131,24 +143,7 @@ export default function CustomerLayout() {
           </div>
 
           {/* Category nav row */}
-          <nav className="hidden md:flex items-center gap-1 pb-3">
-            {navLinks.map(({ to, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) =>
-                  cn(
-                    'text-sm px-4 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors',
-                    isActive
-                      ? 'bg-white/30 text-white'
-                      : 'text-white/80 hover:bg-white/20 hover:text-white',
-                  )
-                }
-              >
-                {label}
-              </NavLink>
-            ))}
-          </nav>
+          
         </div>
 
         {/* Mobile menu */}
@@ -204,16 +199,17 @@ export default function CustomerLayout() {
           <div>
             <p className="text-white font-semibold mb-2">Kategori</p>
             <ul className="space-y-1 text-xs text-gray-500">
-              <li><Link to="/shop?category=anjing" className="hover:text-white transition-colors">Anjing</Link></li>
-              <li><Link to="/shop?category=kucing" className="hover:text-white transition-colors">Kucing</Link></li>
+              {categories.slice(0, 5).map((c: { slug: string; name: string }) => (
+                <li key={c.slug}><Link to={`/shop?category=${c.slug}`} className="hover:text-white transition-colors">{c.name}</Link></li>
+              ))}
             </ul>
           </div>
           <div>
             <p className="text-white font-semibold mb-2">Bantuan</p>
             <ul className="space-y-1 text-xs text-gray-500">
-              <li><Link to="/tentang" className="hover:text-white transition-colors">Tentang Kami</Link></li>
-              <li><Link to="/kontak" className="hover:text-white transition-colors">Hubungi Kami</Link></li>
-              <li><Link to="/kebijakan-privasi" className="hover:text-white transition-colors">Kebijakan Privasi</Link></li>
+              <li><span className="text-gray-600">Tentang Kami</span></li>
+              <li><span className="text-gray-600">Hubungi Kami</span></li>
+              <li><span className="text-gray-600">Kebijakan Privasi</span></li>
             </ul>
           </div>
         </div>

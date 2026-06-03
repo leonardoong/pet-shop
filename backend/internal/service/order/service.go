@@ -2,13 +2,16 @@ package order
 
 import (
 	"errors"
+	"fmt"
 
 	orderdto "petshop/internal/dto/order"
 	ordermodel "petshop/internal/model/order"
+	productmodel "petshop/internal/model/product"
 	cartrepo "petshop/internal/repository/cart"
 	orderrepo "petshop/internal/repository/order"
 	productrepo "petshop/internal/repository/product"
 	userrepo "petshop/internal/repository/user"
+	"petshop/pkg/payment"
 	"petshop/pkg/response"
 
 	"github.com/google/uuid"
@@ -22,7 +25,7 @@ var (
 )
 
 type Service interface {
-	Checkout(customerID uuid.UUID, req orderdto.CreateRequest) (*ordermodel.Order, error)
+	Checkout(customerID uuid.UUID, req orderdto.CreateRequest) (*orderdto.CheckoutResponse, error)
 	ListOrders(customerID uuid.UUID, f orderdto.ListFilter) (response.Paginated[ordermodel.Order], error)
 	GetOrderByID(id, customerID uuid.UUID) (*ordermodel.Order, error)
 }
@@ -32,6 +35,7 @@ type service struct {
 	cartRepo    cartrepo.Repository
 	addrRepo    userrepo.Repository
 	productRepo productrepo.ProductRepository
+	paymentDrv  payment.Driver
 }
 
 func NewService(
@@ -39,16 +43,18 @@ func NewService(
 	cartRepo cartrepo.Repository,
 	addrRepo userrepo.Repository,
 	productRepo productrepo.ProductRepository,
+	paymentDrv payment.Driver,
 ) Service {
 	return &service{
 		repo:        repo,
 		cartRepo:    cartRepo,
 		addrRepo:    addrRepo,
 		productRepo: productRepo,
+		paymentDrv:  paymentDrv,
 	}
 }
 
-func (s *service) Checkout(customerID uuid.UUID, req orderdto.CreateRequest) (*ordermodel.Order, error) {
+func (s *service) Checkout(customerID uuid.UUID, req orderdto.CreateRequest) (*orderdto.CheckoutResponse, error) {
 	addrID, err := uuid.Parse(req.AddressID)
 	if err != nil {
 		return nil, ErrAddressNotFound
@@ -72,6 +78,7 @@ func (s *service) Checkout(customerID uuid.UUID, req orderdto.CreateRequest) (*o
 
 	var total float64
 	items := make([]ordermodel.OrderItem, 0, len(cart.Items))
+	payItems := make([]payment.ItemDetail, 0, len(cart.Items))
 	for _, item := range cart.Items {
 		subtotal := item.Product.Price * float64(item.Quantity)
 		total += subtotal
@@ -81,20 +88,25 @@ func (s *service) Checkout(customerID uuid.UUID, req orderdto.CreateRequest) (*o
 			UnitPrice: item.Product.Price,
 			Subtotal:  subtotal,
 		})
+		payItems = append(payItems, payment.ItemDetail{
+			ID: item.ProductID.String(), Name: item.Product.Name,
+			Price: item.Product.Price, Quantity: item.Quantity,
+		})
 	}
 
 	o := &ordermodel.Order{
-		CustomerID:   customerID,
-		Status:       ordermodel.StatusPending,
-		TotalAmount:  total,
-		ShipName:     addr.RecipientName,
-		ShipPhone:    addr.Phone,
-		ShipStreet:   addr.Street,
-		ShipCity:     addr.City,
-		ShipProvince: addr.Province,
-		ShipPostal:   addr.PostalCode,
-		Notes:        req.Notes,
-		Items:        items,
+		CustomerID:    customerID,
+		Status:        ordermodel.StatusPending,
+		PaymentStatus: ordermodel.PaymentStatusPending,
+		TotalAmount:   total,
+		ShipName:      addr.RecipientName,
+		ShipPhone:     addr.Phone,
+		ShipStreet:    addr.Street,
+		ShipCity:      addr.City,
+		ShipProvince:  addr.Province,
+		ShipPostal:    addr.PostalCode,
+		Notes:         req.Notes,
+		Items:         items,
 	}
 
 	db := s.repo.DB()
@@ -127,7 +139,40 @@ func (s *service) Checkout(customerID uuid.UUID, req orderdto.CreateRequest) (*o
 		return nil, err
 	}
 
-	return o, nil
+	for _, item := range cart.Items {
+		costPrice := max(item.Product.CostPrice, 0)
+		sl := &productmodel.StockLog{
+			ProductID: item.ProductID,
+			Type:      productmodel.StockLogSale,
+			Quantity:  item.Quantity,
+			CostPrice: costPrice,
+			TotalCost: costPrice * float64(item.Quantity),
+			Note:      fmt.Sprintf("Order #%s", o.ID.String()[:8]),
+		}
+		s.productRepo.CreateStockLog(sl)
+	}
+
+	resp := &orderdto.CheckoutResponse{Order: *o}
+
+	if s.paymentDrv != nil {
+		payResp, err := s.paymentDrv.CreateTransaction(payment.CreateRequest{
+			OrderID:       o.ID.String(),
+			GrossAmount:   total,
+			CustomerName:  addr.RecipientName,
+			CustomerEmail: req.CustomerEmail,
+			CustomerPhone: addr.Phone,
+			Items:         payItems,
+		})
+		if err == nil && payResp != nil {
+			o.PaymentTransactionID = payResp.TransactionID
+			o.PaymentURL = payResp.PaymentURL
+			s.repo.UpdateOrder(o)
+			resp.PaymentURL = payResp.PaymentURL
+			resp.PaymentToken = payResp.PaymentToken
+		}
+	}
+
+	return resp, nil
 }
 
 func (s *service) ListOrders(customerID uuid.UUID, f orderdto.ListFilter) (response.Paginated[ordermodel.Order], error) {

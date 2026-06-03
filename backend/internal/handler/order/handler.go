@@ -40,7 +40,7 @@ func (h *Handler) Checkout(c *gin.Context) {
 	}
 
 	customerID := middleware.MustGetCustomerID(c)
-	o, err := h.svc.Checkout(customerID, req)
+	resp, err := h.svc.Checkout(customerID, req)
 	if err != nil {
 		switch {
 		case errors.Is(err, ordersvc.ErrEmptyCart):
@@ -54,7 +54,7 @@ func (h *Handler) Checkout(c *gin.Context) {
 		}
 		return
 	}
-	response.Created(c, "Order placed", o)
+	response.Created(c, "Order placed", resp)
 }
 
 // ListOrders godoc

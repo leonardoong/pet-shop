@@ -13,14 +13,20 @@ type Repository interface {
 	CreateCustomer(c *usermodel.Customer) error
 	FindCustomerByEmail(email string) (*usermodel.Customer, error)
 	FindCustomerByID(id uuid.UUID) (*usermodel.Customer, error)
+	UpdateCustomer(c *usermodel.Customer) error
 
 	FindAdminByEmail(email string) (*usermodel.Admin, error)
 	FindAdminByID(id uuid.UUID) (*usermodel.Admin, error)
+	UpdateAdmin(a *usermodel.Admin) error
 
 	CreateRefreshToken(rt *usermodel.RefreshToken) error
 	FindRefreshToken(tokenHash string) (*usermodel.RefreshToken, error)
 	RevokeRefreshToken(id uuid.UUID) error
 	RevokeAllUserTokens(userID uuid.UUID, userType usermodel.UserType) error
+
+	CreateResetToken(rt *usermodel.ResetToken) error
+	FindResetToken(tokenHash string) (*usermodel.ResetToken, error)
+	MarkResetTokenUsed(id uuid.UUID) error
 }
 
 type repository struct{ db *gorm.DB }
@@ -99,4 +105,29 @@ func (r *repository) RevokeAllUserTokens(userID uuid.UUID, userType usermodel.Us
 	return r.db.Model(&usermodel.RefreshToken{}).
 		Where("user_id = ? AND user_type = ? AND revoked = false", userID, userType).
 		Update("revoked", true).Error
+}
+
+func (r *repository) UpdateCustomer(c *usermodel.Customer) error {
+	return r.db.Save(c).Error
+}
+
+func (r *repository) UpdateAdmin(a *usermodel.Admin) error {
+	return r.db.Save(a).Error
+}
+
+func (r *repository) CreateResetToken(rt *usermodel.ResetToken) error {
+	return r.db.Create(rt).Error
+}
+
+func (r *repository) FindResetToken(tokenHash string) (*usermodel.ResetToken, error) {
+	var rt usermodel.ResetToken
+	err := r.db.Where("token_hash = ? AND used = false", tokenHash).First(&rt).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	return &rt, err
+}
+
+func (r *repository) MarkResetTokenUsed(id uuid.UUID) error {
+	return r.db.Model(&usermodel.ResetToken{}).Where("id = ?", id).Update("used", true).Error
 }

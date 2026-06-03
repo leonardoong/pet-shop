@@ -33,7 +33,7 @@ export default function Register() {
     try {
       const res = await authApi.register(data)
       const { customer, tokens } = res.data.data
-      setAuth(customer, tokens.access_token, tokens.access_token)
+      setAuth(customer, tokens.access_token, tokens.refresh_token)
       navigate('/')
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })

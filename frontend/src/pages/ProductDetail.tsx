@@ -6,6 +6,7 @@ import { productsApi } from '@/api/products'
 import { useCartStore } from '@/store/cartStore'
 import { useAuthStore } from '@/store/authStore'
 import { formatPrice } from '@/lib/utils'
+import ReviewList from '@/components/ReviewList'
 
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>()
@@ -205,6 +206,8 @@ export default function ProductDetail() {
           )}
         </div>
       </div>
+
+      <ReviewList productSlug={slug!} />
     </div>
   )
 }

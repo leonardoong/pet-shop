@@ -1,0 +1,2 @@
+ALTER TABLE products DROP COLUMN IF EXISTS cost_price;
+DROP TABLE IF EXISTS stock_logs;

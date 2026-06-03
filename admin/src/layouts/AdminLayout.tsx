@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Package, ShoppingCart, Users,
-  Warehouse, Settings, LogOut, ChevronRight,
+  Warehouse, Settings, LogOut, ChevronRight, Tags,
 } from 'lucide-react'
 import { useAdminAuthStore } from '@/store/authStore'
 import { cn } from '@/lib/utils'
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 const navItems = [
   { to: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard, permission: 'dashboard:read' },
   { to: '/products',   label: 'Products',   icon: Package,         permission: 'products:read' },
+  { to: '/categories', label: 'Categories', icon: Tags,            permission: 'categories:read' },
   { to: '/orders',     label: 'Orders',     icon: ShoppingCart,    permission: 'orders:read' },
   { to: '/inventory',  label: 'Inventory',  icon: Warehouse,       permission: 'inventory:read' },
   { to: '/customers',  label: 'Customers',  icon: Users,           permission: 'customers:read' },

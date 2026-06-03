@@ -10,6 +10,10 @@ import Checkout from '@/pages/Checkout'
 import Orders from '@/pages/Orders'
 import OrderDetail from '@/pages/OrderDetail'
 import AddressBook from '@/pages/AddressBook'
+import Profile from '@/pages/Profile'
+import ForgotPassword from '@/pages/ForgotPassword'
+import ResetPassword from '@/pages/ResetPassword'
+import NotFound from '@/pages/NotFound'
 import { useAuthStore } from '@/store/authStore'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -26,6 +30,8 @@ export const router = createBrowserRouter([
       { index: true,              element: <Home /> },
       { path: 'masuk',            element: <Login /> },
       { path: 'daftar',           element: <Register /> },
+      { path: 'lupa-password',    element: <ForgotPassword /> },
+      { path: 'reset-password',   element: <ResetPassword /> },
       { path: 'shop',             element: <Shop /> },
       { path: 'produk/:slug',     element: <ProductDetail /> },
       {
@@ -47,6 +53,14 @@ export const router = createBrowserRouter([
       {
         path: 'akun/alamat',
         element: <RequireAuth><AddressBook /></RequireAuth>,
+      },
+      {
+        path: 'akun/profil',
+        element: <RequireAuth><Profile /></RequireAuth>,
+      },
+      {
+        path: '*',
+        element: <NotFound />,
       },
     ],
   },

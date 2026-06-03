@@ -34,7 +34,11 @@ export const useAdminAuthStore = create<AdminAuthState>()(
         const { refreshToken } = get()
         if (!refreshToken) throw new Error('No refresh token')
         const res = await authApi.refresh(refreshToken)
-        set({ accessToken: res.data.data.access_token })
+        const { access_token, refresh_token } = res.data.data
+        set({
+          accessToken: access_token,
+          refreshToken: refresh_token || refreshToken,
+        })
       },
 
       logout: () => {

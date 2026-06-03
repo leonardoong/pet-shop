@@ -9,11 +9,12 @@ import (
 )
 
 type Config struct {
-	App      AppConfig
-	DB       DBConfig
-	Redis    RedisConfig
-	JWT      JWTConfig
-	CORS     CORSConfig
+	App     AppConfig
+	DB      DBConfig
+	Redis   RedisConfig
+	JWT     JWTConfig
+	CORS    CORSConfig
+	Payment PaymentConfig
 }
 
 type AppConfig struct {
@@ -47,6 +48,10 @@ type CORSConfig struct {
 	AllowedOrigins string
 }
 
+type PaymentConfig struct {
+	Driver string
+}
+
 func Load() *Config {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, reading from environment")
@@ -78,6 +83,9 @@ func Load() *Config {
 		},
 		CORS: CORSConfig{
 			AllowedOrigins: getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001"),
+		},
+		Payment: PaymentConfig{
+			Driver: getEnv("PAYMENT_DRIVER", "mock"),
 		},
 	}
 }

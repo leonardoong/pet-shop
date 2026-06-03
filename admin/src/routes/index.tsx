@@ -2,6 +2,12 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import AdminLayout from '@/layouts/AdminLayout'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
+import Products from '@/pages/Products'
+import Categories from '@/pages/Categories'
+import Orders from '@/pages/Orders'
+import Inventory from '@/pages/Inventory'
+import Customers from '@/pages/Customers'
+import NotFound from '@/pages/NotFound'
 import { useAdminAuthStore } from '@/store/authStore'
 
 function RequireAdmin({ children }: { children: React.ReactNode }) {
@@ -17,10 +23,6 @@ function RequirePermission({ permission, children }: { permission: string; child
   }
   return <>{children}</>
 }
-
-const placeholder = (label: string) => (
-  <div className="p-8 text-center text-gray-400">{label} — coming in Phase 3</div>
-)
 
 export const router = createBrowserRouter([
   {
@@ -38,23 +40,33 @@ export const router = createBrowserRouter([
       },
       {
         path: 'products',
-        element: <RequirePermission permission="products:read">{placeholder('Product Management')}</RequirePermission>,
+        element: <RequirePermission permission="products:read"><Products /></RequirePermission>,
+      },
+      {
+        path: 'categories',
+        element: <RequirePermission permission="categories:read"><Categories /></RequirePermission>,
       },
       {
         path: 'orders',
-        element: <RequirePermission permission="orders:read">{placeholder('Order Management')}</RequirePermission>,
+        element: <RequirePermission permission="orders:read"><Orders /></RequirePermission>,
       },
       {
         path: 'inventory',
-        element: <RequirePermission permission="inventory:read">{placeholder('Inventory Management')}</RequirePermission>,
+        element: <RequirePermission permission="inventory:read"><Inventory /></RequirePermission>,
       },
       {
         path: 'customers',
-        element: <RequirePermission permission="customers:read">{placeholder('Customer List')}</RequirePermission>,
+        element: <RequirePermission permission="customers:read"><Customers /></RequirePermission>,
       },
       {
         path: 'settings',
-        element: <RequirePermission permission="admins:read">{placeholder('Settings & Role Management')}</RequirePermission>,
+        element: <RequirePermission permission="admins:read">
+          <div className="p-8 text-center text-gray-400">Settings &amp; Role Management — coming soon</div>
+        </RequirePermission>,
+      },
+      {
+        path: '*',
+        element: <NotFound />,
       },
     ],
   },
